@@ -14,16 +14,14 @@ class ModerationCommands(commands.Cog):
         print(f"👮 {__name__} is ready.")
 
     def get_warn_count(self, user_id):
-        """Récupère le nombre d'avertissements d'un utilisateur depuis la base de données."""
-        with sqlite3.connect("./database/moderation.db") as db:
+        with sqlite3.connect("./database/moderation.db") as db: # Get the number of warnings
             cursor = db.cursor()
             cursor.execute("SELECT warn_count FROM sanctions WHERE user_id = ?", (user_id,))
             result = cursor.fetchone()
         return result[0] if result else 0
 
     def reset_warnings(self, user_id):
-        """Réinitialise les avertissements d'un utilisateur."""
-        with sqlite3.connect("./database/moderation.db") as db:
+        with sqlite3.connect("./database/moderation.db") as db: # reset the warnings
             cursor = db.cursor()
             cursor.execute("DELETE FROM sanctions WHERE user_id = ?", (user_id,))
             db.commit()
@@ -48,7 +46,7 @@ class ModerationCommands(commands.Cog):
     @app_commands.checks.has_role("ModoModo")
     @app_commands.describe(user="ID de l'utilisateur à réinitialiser")
     async def clear_warnings(self, interaction: discord.Interaction, user: discord.Member):
-        user_id = user.id  # Récupère l'ID de l'utilisateur directement
+        user_id = user.id  #Get user id
         self.reset_warnings(user_id)
 
         await interaction.response.send_message(f"✅ Les avertissements de {user.mention} ont été réinitialisés.", ephemeral=True)
