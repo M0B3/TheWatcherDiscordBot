@@ -104,17 +104,6 @@ class AutoModeration(commands.Cog):
             await guild.ban(member, reason="Trop d'infractions au filtre anti-insultes")
             self.reset_warns(member.id)
 
-    @app_commands.command(name="links", description="Recharge la liste des liens de confiance")
-    @app_commands.checks.has_role("ModoModo")  # check modo role
-    async def links(self, interaction: discord.Interaction):
-        self.trusted_links = self.load_trusted_links()
-        await interaction.response.send_message("✅ Liste des liens de confiance mise à jour !", ephemeral=True)
-
-    @links.error
-    async def reload_trusted_links_error(self, interaction: discord.Interaction, error):
-        if isinstance(error, app_commands.MissingRole):
-            await interaction.response.send_message("❌ Tu n'as pas la permission d'utiliser cette commande.", ephemeral=True)
-
     async def close_connection(self):
         print("🔌 Connexion à la base de données fermée.") # clean disconect from db
 
