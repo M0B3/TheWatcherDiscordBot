@@ -10,7 +10,7 @@ class AutoModeration(commands.Cog):
         self.bot = bot
         self.banned_words = self.load_banned_words()
         self.trusted_links = self.load_trusted_links()
-        self.warn_cache = {}  # Cache pour éviter trop de requêtes SQL
+        self.warn_cache = {}  # store warnings in memory
         self.link_regex = re.compile(r"(https?://|www\.)\S+")
         self.preload_warnings()
 
@@ -31,8 +31,7 @@ class AutoModeration(commands.Cog):
             return set()
 
     def preload_warnings(self):
-        """Charge les avertissements en cache pour éviter trop d'accès à la base."""
-        with sqlite3.connect("./database/moderation.db") as db:
+        with sqlite3.connect("./database/moderation.db") as db: #load warnings from the database
             cursor = db.cursor()
             cursor.execute("SELECT user_id, warn_count FROM sanctions")
             self.warn_cache = {user_id: warn_count for user_id, warn_count in cursor.fetchall()}
@@ -40,8 +39,7 @@ class AutoModeration(commands.Cog):
     def get_warn_count(self, user_id):
         return self.warn_cache.get(user_id, 0)
 
-    def update_warn_count(self, user_id):
-        """Met à jour l'avertissement en mémoire et en base."""
+    def update_warn_count(self, user_id): # Update the number of warnings
         self.warn_cache[user_id] = self.warn_cache.get(user_id, 0) + 1
         
         with sqlite3.connect("./database/moderation.db") as db:
@@ -55,8 +53,7 @@ class AutoModeration(commands.Cog):
             db.commit()
         return self.warn_cache[user_id]
 
-    def reset_warns(self, user_id):
-        """Réinitialise les avertissements d'un utilisateur."""
+    def reset_warns(self, user_id): # reset the warnings
         self.warn_cache.pop(user_id, None)
         with sqlite3.connect("./database/moderation.db") as db:
             cursor = db.cursor()
@@ -107,20 +104,8 @@ class AutoModeration(commands.Cog):
             await guild.ban(member, reason="Trop d'infractions au filtre anti-insultes")
             self.reset_warns(member.id)
 
-    @app_commands.command(name="links", description="Recharge la liste des liens de confiance")
-    @app_commands.checks.has_role("ModoModo")  # check modo role
-    async def links(self, interaction: discord.Interaction):
-        self.trusted_links = self.load_trusted_links()
-        await interaction.response.send_message("✅ Liste des liens de confiance mise à jour !", ephemeral=True)
-
-    @links.error
-    async def reload_trusted_links_error(self, interaction: discord.Interaction, error):
-        if isinstance(error, app_commands.MissingRole):
-            await interaction.response.send_message("❌ Tu n'as pas la permission d'utiliser cette commande.", ephemeral=True)
-
     async def close_connection(self):
-        """Fermeture propre de la connexion à la base de données."""
-        print("🔌 Connexion à la base de données fermée.")
+        print("🔌 Connexion à la base de données fermée.") # clean disconect from db
 
 async def setup(bot):
     await bot.add_cog(AutoModeration(bot))
