@@ -5,25 +5,42 @@ from discord import app_commands
 MEMBER_ROLE_ID = 1337360310943875113  
 MOD_ROLE_NAME = "ModoModo"  
 
+class AgeSelect(discord.ui.Select):
+    def __init__(self, member: discord.Member):
+        self.member = member
+        options = [
+            discord.SelectOption(label="Moins de 13 ans", description="L'âge requis en europe est 13ans et +, mais l'utilisation de donées est de 15ans et +."),
+            discord.SelectOption(label="13-17 ans", description="Vous obtiendrez le rôle Vérifié."),
+            discord.SelectOption(label="18 ans et plus", description="Vous obtiendrez le rôle Vérifié.")
+        ]
+        super().__init__(placeholder="Sélectionnez votre âge", min_values=1, max_values=1, options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        guild = interaction.guild
+        role = guild.get_role(MEMBER_ROLE_ID)
+
+        if self.values[0] == "Moins de 13 ans":
+            await interaction.user.send("⛔ Vous devez avoir au moins 13 ans pour rejoindre ce serveur. Vous avez été expulsé.")
+            await interaction.user.kick(reason="Âge inférieur à 13 ans")
+        else:
+            if role not in interaction.user.roles:
+                await interaction.user.add_roles(role)
+                await interaction.response.send_message("✅ Vous avez accepté les règles ! Le rôle **Vérifié** vous a été attribué.", ephemeral=True)
+            else:
+                await interaction.response.send_message("🔹 Vous avez déjà le rôle **Vérifié**.", ephemeral=True)
+
+class AgeView(discord.ui.View):
+    def __init__(self, member: discord.Member):
+        super().__init__(timeout=None)
+        self.add_item(AgeSelect(member))
+
 class RulesView(discord.ui.View):
     def __init__(self):
-        super().__init__(timeout=None)  # active all time
+        super().__init__(timeout=None) #active all times
 
     @discord.ui.button(label="✅ Accepter les règles", style=discord.ButtonStyle.green, custom_id="accept_rules")
     async def accept_rules(self, interaction: discord.Interaction, button: discord.ui.Button):
-        guild = interaction.guild
-        member = interaction.user
-        role = guild.get_role(MEMBER_ROLE_ID)
-
-        if role is None:
-            await interaction.response.send_message("⚠️ Le rôle 'Vérifié' n'existe pas. Contactez un admin.", ephemeral=True)
-            return
-
-        if role not in member.roles:
-            await member.add_roles(role)
-            await interaction.response.send_message("✅ Vous avez accepté les règles ! Le rôle **Vérifié** vous a été attribué.", ephemeral=True)
-        else:
-            await interaction.response.send_message("🔹 Vous avez déjà le rôle **Vérifié**.", ephemeral=True)
+        await interaction.response.send_message("Veuillez sélectionner votre âge :", view=AgeView(interaction.user), ephemeral=True)
 
 class Rules(commands.Cog):
     def __init__(self, bot):
