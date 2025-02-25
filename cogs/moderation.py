@@ -71,7 +71,11 @@ class AutoModeration(commands.Cog):
 
         lower_msg = message.content.lower()
         contains_bad_word = any(word in lower_msg for word in self.banned_words)
-        contains_bad_link = self.link_regex.search(message.content) and not any(link in message.content for link in self.trusted_links)
+        contains_bad_link = (
+            self.link_regex.search(message.content) 
+            and not any(link in message.content for link in self.trusted_links)
+            and not message.content.startswith("https://tenor.com")
+        )
 
         if contains_bad_word or contains_bad_link:
             await message.delete()
