@@ -24,7 +24,7 @@ async def on_ready():
     except Exception as e:
         print(f'An error occurred: {e}') # Print an error if one occurs
     
-async def Load():
+async def Load(): # Load all the cogs in the cogs folder
     for filename in os.listdir("./cogs"):
         if filename.endswith(".py"):
             await bot.load_extension(f'cogs.{filename[:-3]}')

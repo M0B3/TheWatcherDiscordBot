@@ -1,43 +1,56 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-import sqlite3
+import mysql.connector
+import os
+from dotenv import load_dotenv
 
-class Help(commands.Cog):
+load_dotenv('config.env')
+
+def get_connection(): # Connect to the database
+    return mysql.connector.connect(
+        host=os.getenv('DB_HOST'),
+        user=os.getenv('DB_USER'),
+        password=os.getenv('DB_PASSWORD'),
+        database=os.getenv('DB_NAME')
+    )
+class Help(commands.Cog): # Set up the Help cog
     def __init__(self, bot):
         self.bot = bot
         self.create_help_table()
 
     def create_help_table(self): # Create the help table (add fields if needed)
-        with sqlite3.connect("./database/help.db") as db:
-            cursor = db.cursor()
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS help_message (
-                    id INTEGER PRIMARY KEY,
-                    title TEXT,
-                    description TEXT,
-                    field1_name TEXT,
-                    field1_value TEXT,
-                    field2_name TEXT,
-                    field2_value TEXT,
-                    field3_name TEXT,
-                    field3_value TEXT,
-                    field4_name TEXT,
-                    field4_value TEXT,
-                    field5_name TEXT,
-                    field5_value TEXT,
-                    footer TEXT
-                )
-            """)
-            db.commit()
+        db = get_connection()
+        cursor = db.cursor()
+        cursor.execute("""
+                           CREATE TABLE IF NOT EXISTS help_message
+                           (
+                               id INTEGER PRIMARY KEY,
+                               title TEXT,
+                               description TEXT,
+                               field1_name TEXT,
+                               field1_value TEXT,
+                               field2_name TEXT,
+                               field2_value TEXT,
+                               field3_name TEXT,
+                               field3_value TEXT,
+                               field4_name TEXT,
+                               field4_value TEXT,
+                               field5_name TEXT,
+                               field5_value TEXT,
+                               footer TEXT
+                           )
+                            """)
+        db.commit()
 
     def get_help_message(self): # Get the help message from the database
-        with sqlite3.connect("./database/help.db") as db:
-            cursor = db.cursor()
-            cursor.execute("SELECT * FROM help_message WHERE id = 1")
-            result = cursor.fetchone()
+        db = get_connection()
+        cursor = db.cursor()
+        cursor.execute("SELECT * FROM help_message WHERE id = 1")
+        result = cursor.fetchone()
         
         if result:
+            # Get the help message from the database
             return {
                 "title": result[1],
                 "description": result[2],
@@ -67,22 +80,26 @@ class Help(commands.Cog):
 
     def update_help_message(self, title, description, field1_name, field1_value, field2_name, field2_value, field3_name, field3_value, field4_name, field4_value, field5_name, field5_value, footer):
         # Update the help message in the database
-        with sqlite3.connect("./database/help.db") as db:
-            cursor = db.cursor()
-            cursor.execute("""
-                INSERT INTO help_message (id, title, description, field1_name, field1_value, field2_name, field2_value, field3_name, field3_value, field4_name, field4_value, field5_name, field5_value, footer)
-                VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(id) DO UPDATE SET
-                    title = ?, description = ?,
-                    field1_name = ?, field1_value = ?,
-                    field2_name = ?, field2_value = ?,
-                    field3_name = ?, field3_value = ?,
-                    field4_name = ?, field4_value = ?,
-                    field5_name = ?, field5_value = ?,
-                    footer = ?
-            """, (title, description, field1_name, field1_value, field2_name, field2_value, field3_name, field3_value, field4_name, field4_value, field5_name, field5_value, footer,
-                  title, description, field1_name, field1_value, field2_name, field2_value, field3_name, field3_value, field4_name, field4_value, field5_name, field5_value, footer))
-            db.commit()
+        db = get_connection()
+        cursor = db.cursor()
+        cursor.execute("""
+                           INSERT INTO help_message (id, title, description, field1_name, field1_value, field2_name,
+                                                     field2_value, field3_name, field3_value, field4_name, field4_value,
+                                                     field5_name, field5_value, footer)
+                           VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO
+                           UPDATE SET
+                               title = ?, description = ?,
+                               field1_name = ?, field1_value = ?,
+                               field2_name = ?, field2_value = ?,
+                               field3_name = ?, field3_value = ?,
+                               field4_name = ?, field4_value = ?,
+                               field5_name = ?, field5_value = ?,
+                               footer = ?
+                           """, (title, description, field1_name, field1_value, field2_name, field2_value, field3_name,
+                                 field3_value, field4_name, field4_value, field5_name, field5_value, footer,
+                                 title, description, field1_name, field1_value, field2_name, field2_value, field3_name,
+                                 field3_value, field4_name, field4_value, field5_name, field5_value, footer))
+        db.commit()
 
     @app_commands.command(name="sethelp", description="Définit un nouveau message d'aide (Réservé aux admins)")
     @app_commands.checks.has_role("ModoModo")
@@ -99,10 +116,10 @@ class Help(commands.Cog):
         
         for field in help_data["fields"]:
             if field["name"] and field["value"]:
-                embed_help.add_field(name=field["name"], value=field["value"], inline=False)
+                embed_help.add_field(name=field["name"], value=field["value"], inline=False) # Add fields only if they are not None
         
         embed_help.set_footer(text=help_data["footer"])
-        await interaction.response.send_message(embed=embed_help, ephemeral=True)
+        await interaction.response.send_message(embed=embed_help, ephemeral=True) # Send the help message as an ephemeral message (only visible to the user)
 
 async def setup(bot):
     await bot.add_cog(Help(bot))

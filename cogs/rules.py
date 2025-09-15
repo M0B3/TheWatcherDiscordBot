@@ -1,14 +1,27 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
+import mysql.connector
+import os
+from dotenv import load_dotenv
+
+# Load database credentials from .env file
+load_dotenv('config.env')
+
+def get_connection():
+    return mysql.connector.connect(
+        host=os.getenv('DB_HOST'),
+        user=os.getenv('DB_USER'),
+        password=os.getenv('DB_PASSWORD'),
+        database=os.getenv('DB_NAME')
+    )
 
 MEMBER_ROLE_ID = 1337360310943875113  
 MOD_ROLE_NAME = "ModoModo"  
-
 class AgeSelect(discord.ui.Select):
     def __init__(self, member: discord.Member):
         self.member = member
-        options = [
+        options = [ # dropdown options for age verification
             discord.SelectOption(label="Moins de 13 ans", description="L'âge requis en europe est 13ans et +, mais l'utilisation de donées est de 15ans et +."),
             discord.SelectOption(label="13-17 ans", description="Vous obtiendrez le rôle Vérifié."),
             discord.SelectOption(label="18 ans et plus", description="Vous obtiendrez le rôle Vérifié.")
@@ -19,12 +32,15 @@ class AgeSelect(discord.ui.Select):
         guild = interaction.guild
         role = guild.get_role(MEMBER_ROLE_ID)
 
-        if self.values[0] == "Moins de 13 ans":
+        if self.values[0] == "Moins de 13 ans": # if user selects under 13 kick them
             await interaction.user.send("⛔ Vous devez avoir au moins 13 ans pour rejoindre ce serveur. Vous avez été expulsé.")
             await interaction.user.kick(reason="Âge inférieur à 13 ans")
         else:
             if role not in interaction.user.roles:
                 await interaction.user.add_roles(role)
+                cog = interaction.client.get_cog("Rules")
+                if cog:
+                    cog.register_acceptance(interaction.user)
                 await interaction.response.send_message("✅ Vous avez accepté les règles ! Le rôle **Vérifié** vous a été attribué.", ephemeral=True)
             else:
                 await interaction.response.send_message("🔹 Vous avez déjà le rôle **Vérifié**.", ephemeral=True)
@@ -46,6 +62,34 @@ class Rules(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.bot.add_view(RulesView())  # reboot percistance
+        self.create_rules_table()
+
+    def create_rules_table(self):
+        db = get_connection()
+        cursor = db.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS member_rules_accept (
+                user_id BIGINT PRIMARY KEY,
+                username VARCHAR(255),
+                accepted_at DATETIME
+                )
+            """)
+        db.commit()
+        cursor.close()
+        db.close()
+
+    def register_acceptance(self, user: discord.Member): # log acceptance in database
+        db = get_connection()
+        cursor = db.cursor()
+        cursor.execute("""
+                       INSERT INTO member_rules_accept (user_id, username, accepted_at)
+                       VALUES (%s, %s, NOW())
+                           ON DUPLICATE KEY UPDATE
+                                                username = VALUES(username), accepted_at = VALUES(accepted_at)
+                       """, (user.id, str(user)))
+        db.commit()
+        cursor.close()
+        db.close()
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -65,7 +109,7 @@ class Rules(commands.Cog):
 
         embed = discord.Embed(
             title="📜 Règles du Serveur",
-            description=(
+            description=( # rules description in French
                 "**Bienvenue sur LoneComp !**\n"
                 "Merci de respecter ces règles pour une bonne ambiance. 🚀\n\n"
                 "1️⃣ **Respect** : Pas d'insultes, harcèlement ou discrimination.\n"

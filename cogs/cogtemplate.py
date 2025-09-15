@@ -12,11 +12,12 @@ class CogTemplate(commands.Cog):
 
     """Just an exemple command, delete it if you want"""
     @commands.command()
-    async def ping(self, ctx):
+    async def ping(self, ctx): # Get the latency of the bot
         ping_embed = Embed(title="Ping", description="Latence en ms.", color=0x00ff00)
         ping_embed.add_field(name=f"{self.bot.user.name} a une latence de", value=f"{round(self.bot.latency * 1000)}ms", inline=False)
         ping_embed.set_footer(text=f"Demandé par {ctx.author.name}", icon_url=ctx.author.avatar)
         await ctx.send(embed=ping_embed)
+        
     """Just an exemple command, delete it if you want"""
 
 async def setup(bot):
