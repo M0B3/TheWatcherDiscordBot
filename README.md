@@ -2,7 +2,7 @@
 
 install environement : python -m venv venv
 
-activate environement : venv\Sripts\activate
+activate environement : venv\Scripts\activate
 
 install all dependencies : pip install -r requirements.txt
 

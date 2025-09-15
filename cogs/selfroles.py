@@ -12,8 +12,8 @@ class SelfRoles(commands.Cog):
 
     @commands.command()
     async def selfrole(self, ctx, category: str):
-        role_categories = {
-            "role-divider": {
+        role_categories = { # Define role categories and their corresponding emojis and roles
+            "role-divider": { # Example category -> add new role this whay if needed
                 "1️⃣": "ㅤㅤㅤ╚>ㅤLD Winnersㅤ<╝ㅤㅤㅤ",
                 "2️⃣": "ㅤㅤㅤ╚>ㅤCréateursㅤ<╝ㅤㅤㅤ",
                 "3️⃣": "ㅤㅤㅤ╚>ㅤLevelㅤ<╝ㅤㅤㅤ",
@@ -42,7 +42,7 @@ class SelfRoles(commands.Cog):
             await message.add_reaction(emoji)
 
     @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload):
+    async def on_raw_reaction_add(self, payload): # Listen for reaction adds
         if payload.message_id in self.role_messages:
             guild = self.bot.get_guild(payload.guild_id)
             member = guild.get_member(payload.user_id)
@@ -53,10 +53,10 @@ class SelfRoles(commands.Cog):
                     role = discord.utils.get(guild.roles, name=role_name)
                     if role:
                         await member.add_roles(role)
-                        print(f"Rôle {role_name} attribué à {member.display_name}")
+                        print(f"Rôle {role_name} attribué à {member.display_name}") #Add role to the member
 
     @commands.Cog.listener()
-    async def on_raw_reaction_remove(self, payload):
+    async def on_raw_reaction_remove(self, payload): # If user remove reaction, remove the role
         if payload.message_id in self.role_messages:
             guild = self.bot.get_guild(payload.guild_id)
             member = guild.get_member(payload.user_id)
@@ -67,7 +67,7 @@ class SelfRoles(commands.Cog):
                     role = discord.utils.get(guild.roles, name=role_name)
                     if role:
                         await member.remove_roles(role)
-                        print(f"Rôle {role_name} retiré de {member.display_name}")
+                        print(f"Rôle {role_name} retiré de {member.display_name}") #Remove role from the member
 
 async def setup(bot):
     await bot.add_cog(SelfRoles(bot))
