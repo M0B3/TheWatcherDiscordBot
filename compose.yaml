@@ -39,6 +39,25 @@ services:
     networks:
       - app_net
 
+  flask_app:
+    build:
+      context: .
+    container_name: flask_app
+    ports:
+      - "8081:8060"
+    environment:
+      DB_HOST: mysql_db
+      DB_PORT: 3306
+      DB_USER: the_watcher
+      DB_PASSWORD: Lololoulou11.
+      DB_NAME: bot_db
+    depends_on:
+      mysql_db:
+        condition: service_healthy
+    networks:
+      - app_net
+    restart: always
+
   mysql_db:
     image: mysql:8.0
     restart: always
